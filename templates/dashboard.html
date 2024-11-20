@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 id="todosHeading" class="text-center">Your TODOs</h2>
+                        <div class="text-right mb-3">
+                            <button id="createTodoButton" class="btn btn-success">Create a TODO</button>
+                        </div>
+                        <div id="todoList" class="list-group"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Create/Update Modal from a separate file to keep things modular -->
+    {% include "modals.html" %}
+{% endblock %}

@@ -1,0 +1,8 @@
+{
+  "username": "asfsdfsdfaivan",
+  "email": "string",
+  "first_name": "string",
+  "last_name": "string",
+  "password": "sdafsdfaasdf",
+  "role": "admin"
+}

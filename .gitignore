@@ -1,0 +1,16 @@
+# Ignore virtual environment
+fastapienv4/
+venv/
+
+# Ignore PyCharm configuration files
+.idea/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore SQLite database file
+todosapp.db
+
+# Ignore environment variables
+.env
