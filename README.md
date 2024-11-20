@@ -16,9 +16,7 @@ Here's the basic structure of the project:
 
 ```
 todoapp3/
-├── .idea/                    # PyCharm configuration files
 ├── alembic/                  # Database migration scripts
-├── fastapienv4/              # Virtual environment (optional)
 ├── routers/                  # Directory for different API route files
 │   ├── admin.py              # Routes for admin-related operations
 │   ├── auth.py               # Routes for authentication
@@ -47,7 +45,6 @@ todoapp3/
 ├── dependencies.py           # Project dependencies and common utilities
 ├── main.py                   # Main application script
 ├── models.py                 # Database models
-├── schema.sql                # SQL schema for database initialization
 ├── todosapp.db               # SQLite database file
 └── README.md                 # Project documentation
 ```

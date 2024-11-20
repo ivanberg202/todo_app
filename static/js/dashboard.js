@@ -1,4 +1,43 @@
-$(document).ready(function() {
+$(document).ready(function()
+ console.log("JavaScript file loaded successfully.")
+ {
+
+    // Fetch the root URL and send the Authorization header
+    fetchRoot();
+
+    function fetchRoot() {
+        const jwtToken = localStorage.getItem("jwt_token"); // Fetch the token from local storage
+
+        if (!jwtToken) {
+            // If no token, redirect to login
+            window.location.href = "/auth/login-page";
+            return;
+        }
+
+        // Make a request to the root route with the Authorization header
+        $.ajax({
+            url: "/",
+            type: "GET",
+            headers: {
+                "Authorization": "Bearer " + jwtToken
+            },
+            success: function(response) {
+                console.log("Access to root:", response);
+                // Optionally render the response (if it is not a redirect)
+                $("body").html(response);
+            },
+            error: function(xhr) {
+                if (xhr.status === 401) {
+                    console.error("Session expired or not authorized. Redirecting to login page.");
+                    window.location.href = "/auth/login-page";
+                } else {
+                    console.error("Error accessing root:", xhr);
+                }
+            }
+        });
+    }
+
+}
     // Fetch user details and TODOs when the document is ready
     fetchUserDetails();
     fetchTodos();
