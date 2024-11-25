@@ -12,6 +12,7 @@ from jose import jwt, JWTError
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import APIRouter, Request
+import logging
 
 
 router = APIRouter(
@@ -46,6 +47,48 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 templates = Jinja2Templates(directory="todoapp3/templates")
 
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+    try:
+        # Log the token received from the oauth2_bearer dependency
+        logger.info(f"Token received: {token}")
+
+        # Decode the token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # Log the decoded payload for further verification
+        logger.info(f"Decoded payload: {payload}")
+
+        username: str = payload.get('sub')
+        user_id: int = payload.get('id')
+        user_role: str = payload.get('role')
+
+        # If any expected claims are missing, raise an error
+        if username is None or user_id is None:
+            logger.error("Missing claims in the token payload.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid authentication token.')
+
+        # Log success for correct token validation
+        logger.info(f"Token successfully validated for user: {username}")
+        print(f"('username': {username}, 'id': {user_id}, 'user_role': {user_role})")
+        return {'username': username, 'id': user_id, 'user_role': user_role}
+
+    except jwt.ExpiredSignatureError:
+        logger.error("Token has expired.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Token has expired.')
+
+    except JWTError as e:
+        logger.error(f"Token validation failed: {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate user.')
+
+
+
 
 ### Pages ###
 
@@ -59,10 +102,22 @@ async def render_login_page(request: Request):
 async def render_register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
-# Route to display the post-login dashboard
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
+
+# @router.get("/dashboard", response_class=HTMLResponse)
+# async def dashboard(request: Request, current_user: dict = Depends(get_current_user)):
+#     if not current_user:
+#         logger.error("User is not authenticated. current_user is None.")
+#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not authenticated")
+#
+#     # Log that the current user is correctly received
+#     logger.info(f"NEW LOG: Accessing dashboard as user: {current_user}")
+#     return templates.TemplateResponse("dashboard.html", {"request": request, "user": current_user})
 
 
 ### Endpoints ###
@@ -112,21 +167,6 @@ async def create_user(
 
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get('sub')
-        user_id: int = payload.get('id')
-        user_role: str = payload.get('role')
-        if username is None or user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail='Could not validate user.')
-        return {'username': username, 'id': user_id, 'user_role': user_role}
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Could not validate user.')
-
-
 @router.get("/me", name="get_current_user_info")
 async def get_current_user_info(current_user: Annotated[dict, Depends(get_current_user)], db: db_dependency):
     # Fetch the full user data from the database using the user_id from the token
@@ -156,13 +196,17 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail='Could not validate user.')
-    token = create_access_token(user.username, user.id, user.role, timedelta(minutes=1))
-
+    token = create_access_token(user.username, user.id, user.role, timedelta(minutes=15))
+    print("login done")
     return {'access_token': token, 'token_type': 'bearer'}
 
 
-
-
-
-
-
+@router.get("/verify-token", name="verify_token")
+async def verify_token(current_user: Annotated[dict, Depends(get_current_user)]):
+    try:
+        # If the token is valid, get_current_user will return the user details
+        print("token verified")
+        return {"message": "Token is valid", "username": current_user['username'], "user_id": current_user['id'], "role": current_user['user_role']}
+    except HTTPException as e:
+        # If there's an error in token validation, raise an HTTP exception
+        raise HTTPException(status_code=e.status_code, detail=e.detail)

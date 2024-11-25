@@ -1,219 +1,133 @@
-$(document).ready(function()
- console.log("JavaScript file loaded successfully.")
- {
+// dashboard.js
+console.log("dashboard.js loaded successfully");
 
-    // Fetch the root URL and send the Authorization header
-    fetchRoot();
-
-    function fetchRoot() {
-        const jwtToken = localStorage.getItem("jwt_token"); // Fetch the token from local storage
-
-        if (!jwtToken) {
-            // If no token, redirect to login
-            window.location.href = "/auth/login-page";
-            return;
-        }
-
-        // Make a request to the root route with the Authorization header
-        $.ajax({
-            url: "/",
-            type: "GET",
-            headers: {
-                "Authorization": "Bearer " + jwtToken
-            },
-            success: function(response) {
-                console.log("Access to root:", response);
-                // Optionally render the response (if it is not a redirect)
-                $("body").html(response);
-            },
-            error: function(xhr) {
-                if (xhr.status === 401) {
-                    console.error("Session expired or not authorized. Redirecting to login page.");
-                    window.location.href = "/auth/login-page";
-                } else {
-                    console.error("Error accessing root:", xhr);
-                }
-            }
-        });
+document.addEventListener("DOMContentLoaded", async function () {
+    // Check if we're on the dashboard page
+    console.log("Current path:", window.location.pathname);
+    if (window.location.pathname !== "/auth/dashboard") {
+        console.log("Not on the dashboard page, skipping dashboard loading script.");
+        return;
     }
 
-}
-    // Fetch user details and TODOs when the document is ready
-    fetchUserDetails();
-    fetchTodos();
+    // Fetch the token from localStorage
+    const token = localStorage.getItem("access_token");
+    console.log("Token retrieved from localStorage:", token);
 
-    function fetchUserDetails() {
-    console.log("Fetching user details..."); // Debugging statement
-    $.ajax({
-        url: "/auth/me",
-        type: "GET",
-        headers: {
-            "Authorization": "Bearer " + localStorage.getItem("jwt_token")
-        },
-        success: function(response) {
-            console.log("User details fetched successfully:", response); // Debugging statement
-            // Use first_name if it exists, otherwise use username
-            const displayName = response.first_name ? response.first_name : response.username;
-            $("#todosHeading").text(`${displayName}'s TODOs`);
-        },
-        error: function(xhr) {
-            console.error("Error fetching user details:", xhr); // Debugging statement
-            if (xhr.status === 401) {
-                $("#todosHeading").text('Session expired. Please log in again.');
+    // If no token is found, redirect to login page
+    if (!token) {
+        console.error("No token found, redirecting to login...");
+        window.location.href = "/auth/login-page";
+        return;
+    }
+
+    try {
+        // Now, fetch the todos for the user
+        console.log("Making fetch request to /todos with token.");
+        const todosResponse = await fetch("/todos/", {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        console.log("Todos fetch request complete. Response status:", todosResponse.status);
+
+        if (todosResponse.ok) {
+            const todosData = await todosResponse.json();
+            console.log("Todos data:", todosData);
+
+            // Find the todos table body and populate it
+            const todosTableBody = document.getElementById("todos-table-body");
+            todosTableBody.innerHTML = ""; // Clear any previous content
+
+            if (todosData.length === 0) {
+                todosTableBody.innerHTML = `<tr><td colspan="5" class="text-center">You have no todos.</td></tr>`;
             } else {
-                $("#todosHeading").text('Error fetching user details.');
-            }
-        }
-    });
-}
+                todosData.forEach(todo => {
+                    const tr = document.createElement("tr");
+                    tr.setAttribute("data-todo-id", todo.id); // Set todo ID for reference
 
-
-    // Function to fetch todos and display them in the DOM
-    function fetchTodos() {
-        $.ajax({
-            url: "/todos/",
-            type: "GET",
-            headers: {
-                "Authorization": "Bearer " + localStorage.getItem("jwt_token")
-            },
-            success: function(response) {
-                const todoList = $("#todoList");
-                todoList.empty(); // Clear the existing list
-                response.forEach(todo => {
-                    addTodoToDOM(todo);
+                    tr.innerHTML = `
+                        <td class="todo-title ${todo.complete ? 'completed' : ''}">${todo.title}</td>
+                        <td>${todo.priority}</td>
+                        <td>${todo.description}</td>
+                        <td><input type="checkbox" class="todo-completed-checkbox" ${todo.complete ? "checked" : ""}></td>
+                    `;
+                    todosTableBody.appendChild(tr);
                 });
-            },
-            error: function(xhr) {
-                if (xhr.status === 401) {
-                    alert("Session expired. Please log in again.");
-                } else {
-                    alert("Error fetching TODOs: " + xhr.responseText);
-                }
             }
-        });
-    }
 
-    // Show Create TODO Modal
-    $("#createTodoButton").click(function() {
-        $("#todoModalLabel").text("Create a TODO");
-        $("#todoForm")[0].reset();
-        $("#todoModal").modal("show");
-        $("#saveTodoButton").data("action", "create").removeData("todoId");
-    });
-
-    // Handle Create/Update TODO Form Submission
-    $("#todoForm").submit(function(event) {
-        event.preventDefault();
-        const action = $("#saveTodoButton").data("action");
-        const todoId = $("#saveTodoButton").data("todoId");
-        const url = action === "create" ? "/todos/todo" : `/todos/todo/${todoId}`;
-        const method = action === "create" ? "POST" : "PUT";
-
-        const todoData = {
-            title: $("#todoTitle").val(),
-            description: $("#todoDescription").val(),
-            priority: parseInt($("#todoPriority").val()),
-            complete: $("#todoComplete").val() === "true"
-        };
-
-        $.ajax({
-            url: url,
-            type: method,
-            contentType: "application/json",
-            headers: {
-                "Authorization": "Bearer " + localStorage.getItem("jwt_token")
-            },
-            data: JSON.stringify(todoData),
-            success: function(response) {
-                $("#todoModal").modal("hide");
-                if (action === "create") {
-                    addTodoToDOM(response);
-                } else if (action === "update") {
-                    updateTodoInDOM(response);
-                }
-            },
-            error: function(xhr) {
-                if (xhr.status === 401) {
-                    alert("Session expired. Please log in again.");
-                } else {
-                    alert("Error saving TODO: " + xhr.responseText);
-                }
-            }
-        });
-    });
-
-    // Show Update TODO Modal
-    $(document).on("click", ".updateTodoButton", function() {
-        const todoItem = $(this).closest(".list-group-item");
-        const todoId = todoItem.data("id");
-
-        $("#todoTitle").val(todoItem.find("h5").text());
-        $("#todoDescription").val(todoItem.find("p").first().text());
-        const priorityText = todoItem.find("small").text().split(", ")[0].split(": ")[1];
-        const completeText = todoItem.find("small").text().split(", ")[1].split(": ")[1];
-        $("#todoPriority").val(priorityText);
-        $("#todoComplete").val(completeText === "Yes" ? "true" : "false");
-
-        $("#todoModalLabel").text("Update TODO");
-        $("#todoModal").modal("show");
-        $("#saveTodoButton").data("action", "update").data("todoId", todoId);
-    });
-
-    // Handle Delete TODO Button
-    $(document).on("click", ".deleteTodoButton", function() {
-        const todoId = $(this).closest(".list-group-item").data("id");
-
-        const userConfirmed = confirm("Are you sure you want to delete this TODO?");
-        if (userConfirmed) {
-            $.ajax({
-                url: `/todos/todo/${todoId}`,
-                type: "DELETE",
-                headers: {
-                    "Authorization": "Bearer " + localStorage.getItem("jwt_token")
-                },
-                success: function() {
-                    removeTodoFromDOM(todoId);
-                },
-                error: function(xhr) {
-                    if (xhr.status === 401) {
-                        alert("Session expired. Please log in again.");
-                    } else {
-                        alert("Error deleting TODO: " + xhr.responseText);
+            // Add event listeners to checkboxes
+            document.querySelectorAll('.todo-completed-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', async function (event) {
+                    const tr = event.target.closest('tr');
+                    if (!tr) {
+                        console.error("Table row not found");
+                        return;
                     }
-                }
+
+                    const todoId = tr.getAttribute('data-todo-id');
+                    if (!todoId) {
+                        console.error("Todo ID not found on the row");
+                        return;
+                    }
+
+                    console.log(`Attempting to update todo with ID: ${todoId}`);
+
+                    const completed = event.target.checked;
+
+                    // Update the visual representation
+                    const cells = tr.querySelectorAll('.todo-title, .todo-priority, .todo-description');
+
+                    if (cells.length > 0) {
+                        cells.forEach(cell => {
+                            if (completed) {
+                                cell.classList.add('text-decoration-line-through', 'text-muted');
+                            } else {
+                                cell.classList.remove('text-decoration-line-through', 'text-muted');
+                            }
+                        });
+                    } else {
+                        console.error("No cells found for todo ID:", todoId);
+                    }
+
+                    // Construct the URL for updating the todo
+                    const updateUrl = `/todos/todo/${todoId}`;
+                    console.log(`Update URL: ${updateUrl}`);
+
+                    // Send update request to server
+                    try {
+                        const updateResponse = await fetch(updateUrl, {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ complete: completed })
+                        });
+
+                        if (!updateResponse.ok) {
+                            console.error(`Failed to update todo status. Status code: ${updateResponse.status}`);
+                            // Optionally revert checkbox if update fails
+                            event.target.checked = !completed;
+                        } else {
+                            console.log(`Todo ${todoId} updated successfully.`);
+                        }
+                    } catch (error) {
+                        console.error(`Error updating todo status: ${error}`);
+                        // Optionally revert checkbox if there's an error
+                        event.target.checked = !completed;
+                    }
+                });
             });
+        } else {
+            console.error("Failed to fetch todos data. Status code:", todosResponse.status);
+            const todosTableBody = document.getElementById("todos-table-body");
+            todosTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Failed to load your todos. Please try again later.</td></tr>`;
         }
-    });
 
-    // Function to add a new TODO to the DOM
-    function addTodoToDOM(todo) {
-        const todoList = $("#todoList");
-        const todoHtml = `
-            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="${todo.id}">
-                <div>
-                    <h5>${todo.title}</h5>
-                    <p>${todo.description}</p>
-                    <small><strong>Priority:</strong> ${todo.priority}, <strong>Complete:</strong> ${todo.complete ? 'Yes' : 'No'}</small>
-                </div>
-                <div>
-                    <button class="btn btn-light btn-sm updateTodoButton"><i class="fa fa-pencil" style="color: grey;"></i></button>
-                    <button class="btn btn-danger btn-sm deleteTodoButton"><i class="fa fa-trash" style="color: white;"></i></button>
-                </div>
-            </div>
-        `;
-        todoList.append(todoHtml);
-    }
-
-    // Function to update a TODO in the DOM
-    function updateTodoInDOM(updatedTodo) {
-        const todoItem = $(`[data-id='${updatedTodo.id}']`);
-        todoItem.find("h5").text(updatedTodo.title);
-        todoItem.find("p").first().text(updatedTodo.description);
-        todoItem.find("small").html(`<strong>Priority:</strong> ${updatedTodo.priority}, <strong>Complete:</strong> ${updatedTodo.complete ? 'Yes' : 'No'}`);
-    }
-
-    // Function to remove a TODO from the DOM
-    function removeTodoFromDOM(todoId) {
-        $(`[data-id='${todoId}']`).remove();
+    } catch (error) {
+        console.error("Error loading todos:", error);
+        window.location.href = "/auth/login-page";
     }
 });

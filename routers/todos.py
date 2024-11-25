@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, Path, Request
@@ -22,6 +22,13 @@ class TodoRequest(BaseModel):
     description: str = Field(min_length=3, max_length=100)
     priority: int = Field(gt=0, lt=6)
     complete: bool
+
+
+class TodoUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=3)
+    description: Optional[str] = Field(None, min_length=3, max_length=100)
+    priority: Optional[int] = Field(None, gt=0, lt=6)
+    complete: Optional[bool] = None
 
 
 def get_todo_or_404(db: Session, user_id: int, todo_id: int):
@@ -63,22 +70,30 @@ async def create_todo(user: user_dependency, db: db_dependency,
     return todo_model
 
 
-# test function created
+# test function needs update
 @router.put("/todo/{todo_id}", status_code=status.HTTP_200_OK)
 async def update_todo(user: user_dependency, db: db_dependency,
-                      todo_request: TodoRequest,
+                      todo_update: TodoUpdate,
                       todo_id: int = Path(gt=0)):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
 
     todo_model = get_todo_or_404(db, user.get('id'), todo_id)
-    todo_model.title = todo_request.title
-    todo_model.description = todo_request.description
-    todo_model.priority = todo_request.priority
-    todo_model.complete = todo_request.complete
+
+    # Only update fields that are provided
+    if todo_update.title is not None:
+        todo_model.title = todo_update.title
+    if todo_update.description is not None:
+        todo_model.description = todo_update.description
+    if todo_update.priority is not None:
+        todo_model.priority = todo_update.priority
+    if todo_update.complete is not None:
+        todo_model.complete = todo_update.complete
+
     db.commit()
     db.refresh(todo_model)
     return todo_model
+
 
 # test functions created
 @router.delete("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
