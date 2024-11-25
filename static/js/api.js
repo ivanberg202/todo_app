@@ -20,7 +20,7 @@ export async function updateTodoStatus(todoId, completed, token) {
 }
 
 export async function addOrUpdateTodo(todoData, todoId, method, token) {
-    const url = todoId ? `/todos/todo/${todoId}` : `/todos/`;
+    const url = todoId ? `/todos/todo/${todoId}` : `/todos/todo`;
     return fetch(url, {
         method,
         headers: {

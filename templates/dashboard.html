@@ -3,20 +3,28 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">Welcome to Your Dashboard</h1>
-    <div id="todos-list">
-        <table class="table table-bordered table-striped">
-            <thead class="thead-dark">
-                <tr>
-                    <th>Title</th>
-                    <th>Priority</th>
-                    <th>Description</th>
-                    <th>Completed</th>
-                </tr>
-            </thead>
-            <tbody id="todos-table-body">
-                <!-- JavaScript will dynamically insert rows here -->
-            </tbody>
-        </table>
-    </div>
+<div id="todos-table">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Priority</th>
+                <th>Description</th>
+                <th>Completed</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="todos-table-body">
+            <!-- Table rows will be populated by JavaScript -->
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/js/api.js"></script>
+<script type="module" src="/static/js/dom-utils.js"></script>
+<script type="module" src="/static/js/todo-form.js"></script>
+<script type="module" src="/static/js/event-handlers.js"></script>
+<script type="module" src="/static/js/dashboard.js"></script>
 {% endblock %}
