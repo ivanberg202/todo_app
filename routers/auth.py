@@ -1,10 +1,12 @@
 from datetime import timedelta, datetime, timezone
+import os
 from typing import Annotated
 from fastapi import Depends, HTTPException, Form
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import status
 from database import get_db
+from config import BASE_DIR
 from models import Users
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -13,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import APIRouter, Request
 import logging
+# from main import templates  # Import templates from main.py
 
 
 router = APIRouter(
@@ -45,7 +48,8 @@ class Token(BaseModel):
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
-templates = Jinja2Templates(directory="todoapp3/templates")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
 
 import logging
 

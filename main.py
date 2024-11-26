@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse
 from models import Base
 from database import engine
 from routers import auth, todos, admin, users
+from config import BASE_DIR
 import logging
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
@@ -20,10 +21,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Set up templates directory
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-print(f"Templates directory: {os.path.join(BASE_DIR, 'templates')}")
-
 # Mount the static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Create all database tables
 Base.metadata.create_all(bind=engine)
@@ -34,9 +33,11 @@ async def root(request: Request):
     return templates.TemplateResponse("root.html", {"request": request})
 
 
-@app.get("/favicon.ico")
+@app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
-    return FileResponse("/static/favicon.ico")
+    return FileResponse(os.path.join(BASE_DIR, "static", "favicon.ico"))
+
+
 
 
 # Include existing routers

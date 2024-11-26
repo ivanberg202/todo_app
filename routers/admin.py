@@ -6,6 +6,7 @@ from models import Todos
 from database import SessionLocal, get_db
 from routers.auth import get_current_user
 
+
 router = APIRouter(
     prefix='/admin',
     tags=['admin']

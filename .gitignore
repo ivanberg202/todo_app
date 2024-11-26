@@ -1,6 +1,7 @@
 # Ignore virtual environment
 fastapienv4/
 venv/
+venvvscode/
 
 # Ignore PyCharm configuration files
 .idea/
