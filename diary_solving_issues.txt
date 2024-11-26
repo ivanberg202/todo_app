@@ -1,0 +1,29 @@
+
+20241126 VS Code environment setup (Problem: Library not loaded: @rpath/libssl.3.dylib)
+Solution:
+Set Compiler Flags Ensure the required environment variables for compilers are set:
+export LDFLAGS="-L/usr/local/opt/libpq/lib"
+export CPPFLAGS="-I/usr/local/opt/libpq/include"
+
+Set PKG_CONFIG_PATH Update the PKG_CONFIG_PATH for tools that use pkg-config:
+export PKG_CONFIG_PATH="/usr/local/opt/libpq/lib/pkgconfig"
+
+Update DYLD_LIBRARY_PATH Add libpq to the DYLD_LIBRARY_PATH:
+export DYLD_LIBRARY_PATH="/usr/local/opt/libpq/lib:$DYLD_LIBRARY_PATH"
+
+Below solution stopped working before fully resolving the imports.
+- I already spent 1,5 days figuring out the same issue on pycharm. Now it took me just 2 hours. Below seems to be the solution:
+
+Step 3: Set DYLD_LIBRARY_PATH
+The dynamic linker on macOS uses DYLD_LIBRARY_PATH to find libraries. Update this path to include OpenSSL's library location.
+
+Temporarily set it for the current session:
+
+bash
+SOLUTION:
+export DYLD_LIBRARY_PATH=$(brew --prefix openssl)/lib:$DYLD_LIBRARY_PATH
+
+To make this permanent, add it to your shell configuration file:
+
+bash (this didn't work)
+echo 'export DYLD_LIBRARY_PATH=$(brew --prefix openssl)/lib:$DYLD_LIBRARY_PATH' >> ~/.zshrc

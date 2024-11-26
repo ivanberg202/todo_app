@@ -37,9 +37,6 @@ export function addEventListeners(todosTableBody, token) {
         }
     });
 
-git commit -m "- text stroke-through upon completion; - edit, add todo in a popup; - delete todo. Bugs: Does not strike-through after reload; Registration not working."
-
-
     // Delegate 'click' events for edit and delete buttons
     todosTableBody.addEventListener('click', function (event) {
         const target = event.target;
