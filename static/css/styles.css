@@ -1,0 +1,4 @@
+.completed td {
+    text-decoration: line-through;
+    color: gray;
+}

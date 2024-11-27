@@ -1,5 +1,3 @@
-// dom-utils.js
-
 export function renderTodos(todosData, todosTableBody) {
     todosData.forEach(todo => {
         const row = document.createElement('tr');
@@ -9,11 +7,11 @@ export function renderTodos(todosData, todosTableBody) {
             row.classList.add('completed');
         }
 
-        // Create the inner HTML for the row
+        // Create the inner HTML for the row with class names on the <td> elements
         row.innerHTML = `
-            <td>${todo.title}</td>
-            <td>${todo.priority}</td>
-            <td>${todo.description}</td>
+            <td class="todo-title">${todo.title}</td>
+            <td class="todo-priority">${todo.priority}</td>
+            <td class="todo-description">${todo.description}</td>
             <td>
                 <input type="checkbox" class="todo-complete-checkbox" data-todo-id="${todo.id}" ${todo.complete ? 'checked' : ''}>
             </td>
