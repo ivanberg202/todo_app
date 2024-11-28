@@ -40,57 +40,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    document.getElementById("registerForm").addEventListener("submit", function(event) {
-        event.preventDefault();
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
-        const repeatPassword = document.getElementById("repeatPassword").value;
-
-        // Check if passwords match
-        if (password !== repeatPassword) {
-            document.getElementById("errorMessage").innerText = "Passwords do not match.";
-            document.getElementById("errorMessage").style.display = "block";
-            return;
-        }
-
-        // Make AJAX request for registration
-        $.ajax({
-            url: "/auth/register",
-            type: "POST",
-            contentType: "application/x-www-form-urlencoded",
-            data: {
-                username: username,
-                password: password
-            },
-            success: function(response) {
-                // On successful registration, automatically log in the user
-                $.ajax({
-                    url: "/auth/login",
-                    type: "POST",
-                    contentType: "application/x-www-form-urlencoded",
-                    data: {
-                        username: username,
-                        password: password
-                    },
-                    success: function(response) {
-                        // Store the JWT token and redirect to the dashboard
-                        localStorage.setItem("jwt_token", response.access_token);
-                        window.location.href = "/auth/dashboard";
-                    },
-                    error: function(xhr) {
-                        document.getElementById("errorMessage").innerText = "Auto-login failed after registration.";
-                        document.getElementById("errorMessage").style.display = "block";
-                    }
-                });
-            },
-            error: function(xhr) {
-                // Show error message if registration fails
-                const errorResponse = JSON.parse(xhr.responseText);
-                document.getElementById("errorMessage").innerText = errorResponse.message || "An error occurred during registration.";
-                document.getElementById("errorMessage").style.display = "block";
-            }
-        });
-    });
-</script>
+<script type="module" src="/static/js/register.js"></script>
 {% endblock %}

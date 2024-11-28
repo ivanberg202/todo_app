@@ -43,7 +43,7 @@ BERLIN_TIMEZONE = timezone(timedelta(hours=1))  # Adjust to +2 for DST if applic
 
 
 @router.get('/', status_code=status.HTTP_200_OK)
-async def get_user(user: user_dependency, db: db_dependency):
+async def get_user(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
 
@@ -57,8 +57,12 @@ async def get_user(user: user_dependency, db: db_dependency):
 
 
 @router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
-async def change_password(user: user_dependency, db: db_dependency,
-                          user_verification: UserVerification):
+async def change_password(
+    user_verification: UserVerification,  # Non-default argument comes first
+    user: dict = Depends(get_current_user),  # Default argument with a dependency
+    db: Session = Depends(get_db)  # Default argument with a dependency
+):
+
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
     user_model = db.query(Users).filter(Users.id == user.get('id')).first()
@@ -73,7 +77,9 @@ async def change_password(user: user_dependency, db: db_dependency,
 
 @router.put("/phone_number", status_code=200)
 async def update_phone_number(
-    user: user_dependency, db: db_dependency, new_phone_number: str
+    new_phone_number: str,  # Non-default argument comes first
+    user: dict = Depends(get_current_user),  # Default argument with a dependency
+    db: Session = Depends(get_db),  # Default argument with a dependency
 ):
     # Fetch the user model
     user_model = db.query(Users).filter(Users.id == user.get('id')).first()
@@ -102,8 +108,10 @@ async def update_phone_number(
 
 
 @router.get("/phone_number/history", status_code=200)
-async def get_phone_number_history(user: user_dependency, db: db_dependency):
-    # Fetch the phone number history for the user
+async def get_phone_number_history(
+    user: dict = Depends(get_current_user),  # Inject current user dependency
+    db: Session = Depends(get_db)  # Inject database session dependency
+):    # Fetch the phone number history for the user
     phone_history = db.query(PhoneNumberHistory).filter(PhoneNumberHistory.user_id == user.get('id')).all()
 
     if not phone_history:
