@@ -3,6 +3,10 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Your Todos</h2>
+    <button id="addTodoButton" class="btn btn-primary">Add a Todo</button>
+</div>
 <div id="todos-table">
     <table class="table table-striped">
         <thead>

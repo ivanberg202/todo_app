@@ -1,28 +1,25 @@
 import { fetchTodos } from './api.js';
 import { openTodoForm } from './todo-form.js';
 import { addEventListeners } from './event-handlers.js';
-import { renderTodos } from './dom-utils.js';  // Import the render function
+import { renderTodos } from './dom-utils.js';
 
 document.addEventListener("DOMContentLoaded", async function () {
-    // Main entry point logic for dashboard
+    // Ensure user is authenticated
     const token = localStorage.getItem("access_token");
     if (!token) {
         window.location.href = "/auth/login-page";
         return;
     }
 
-    const addTodoButton = document.createElement('button');
-    addTodoButton.textContent = "Add a Todo";
-    addTodoButton.classList.add('btn', 'btn-primary', 'mb-3');
-    addTodoButton.style.position = 'absolute';
-    addTodoButton.style.top = '10px';
-    addTodoButton.style.right = '10px';
-    document.body.appendChild(addTodoButton);
+    // Bind event listener to the "Add a Todo" button
+    const addTodoButton = document.getElementById('addTodoButton');
+    if (addTodoButton) {
+        addTodoButton.addEventListener('click', function () {
+            openTodoForm(null, token);
+        });
+    }
 
-    addTodoButton.addEventListener('click', function () {
-        openTodoForm(null, token);
-    });
-
+    // Fetch and render todos
     try {
         const todosResponse = await fetchTodos(token);
         if (todosResponse.ok) {
@@ -30,13 +27,20 @@ document.addEventListener("DOMContentLoaded", async function () {
             const todosTableBody = document.getElementById("todos-table-body");
             todosTableBody.innerHTML = ""; // Clear previous content
 
-            // Render todos and add event listeners...
-            renderTodos(todosData, todosTableBody);  // Render todos into the table
-            addEventListeners(todosTableBody, token); // Add event listeners after rendering todos
+            // Render todos and add event listeners
+            renderTodos(todosData, todosTableBody);
+            addEventListeners(todosTableBody, token);
         } else {
             console.error("Failed to fetch todos data.");
         }
     } catch (error) {
         console.error("Error loading todos:", error);
     }
+});
+
+document.querySelector(".nav-link[href='/auth/logout']").addEventListener("click", (event) => {
+    event.preventDefault(); // Prevent the default link navigation
+    localStorage.removeItem("access_token"); // Clear the token from local storage
+    alert("You have been logged out.");
+    window.location.href = "/auth/login-page"; // Redirect to login page
 });

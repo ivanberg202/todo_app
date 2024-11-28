@@ -45,7 +45,7 @@ class Token(BaseModel):
     token_type: str
 
 
-db_dependency = Annotated[Session, Depends(get_db)]
+db_dependency: Annotated[Session, Depends] = Depends(get_db)
 
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
@@ -60,14 +60,9 @@ logging.basicConfig(level=logging.INFO)
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
-        # Log the token received from the oauth2_bearer dependency
-        logger.info(f"Token received: {token}")
-
         # Decode the token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
-        # Log the decoded payload for further verification
-        logger.info(f"Decoded payload: {payload}")
 
         username: str = payload.get('sub')
         user_id: int = payload.get('id')
@@ -75,12 +70,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
 
         # If any expected claims are missing, raise an error
         if username is None or user_id is None:
-            logger.error("Missing claims in the token payload.")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid authentication token.')
 
-        # Log success for correct token validation
-        logger.info(f"Token successfully validated for user: {username}")
-        print(f"('username': {username}, 'id': {user_id}, 'user_role': {user_role})")
         return {'username': username, 'id': user_id, 'user_role': user_role}
 
     except jwt.ExpiredSignatureError:
@@ -111,17 +102,14 @@ async def render_register_page(request: Request):
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
+@router.get("/logout", name="logout")
+async def logout():
+    """
+    Logout endpoint placeholder.
+    No server-side changes are needed if tokens are only stored client-side.
+    """
+    return {"message": "Logout successful. Please ensure local storage is cleared."}
 
-
-# @router.get("/dashboard", response_class=HTMLResponse)
-# async def dashboard(request: Request, current_user: dict = Depends(get_current_user)):
-#     if not current_user:
-#         logger.error("User is not authenticated. current_user is None.")
-#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not authenticated")
-#
-#     # Log that the current user is correctly received
-#     logger.info(f"NEW LOG: Accessing dashboard as user: {current_user}")
-#     return templates.TemplateResponse("dashboard.html", {"request": request, "user": current_user})
 
 
 ### Endpoints ###
@@ -144,7 +132,7 @@ def create_access_token(username: str, user_id: int, role: str, expires_delta: t
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, name="create_user")
 async def create_user(
-    db: db_dependency,
+    db: Session = db_dependency,  # Use the runtime variable as a dependency
     username: str = Form(...),
     password: str = Form(...),
     email: str = Form(None),
@@ -172,7 +160,10 @@ async def create_user(
 
 
 @router.get("/me", name="get_current_user_info")
-async def get_current_user_info(current_user: Annotated[dict, Depends(get_current_user)], db: db_dependency):
+async def get_current_user_info(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     # Fetch the full user data from the database using the user_id from the token
     user = db.query(Users).filter(Users.id == current_user['id']).first()
 
@@ -194,14 +185,15 @@ async def get_current_user_info(current_user: Annotated[dict, Depends(get_curren
 
 
 @router.post("/login", response_model=Token)
-async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-                                 db: db_dependency):
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail='Could not validate user.')
     token = create_access_token(user.username, user.id, user.role, timedelta(minutes=15))
-    print("login done")
     return {'access_token': token, 'token_type': 'bearer'}
 
 
