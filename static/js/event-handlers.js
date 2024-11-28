@@ -16,17 +16,9 @@ export function addEventListeners(todosTableBody, token) {
                 if (response.ok) {
                     const todoRow = checkbox.closest('tr');
                     if (completed) {
-                        // Apply inline styles to indicate completion
-                        todoRow.querySelectorAll('td').forEach(function (cell) {
-                            cell.style.textDecoration = 'line-through';
-                            cell.style.color = 'grey';
-                        });
+                        todoRow.classList.add('completed'); // Add the 'completed' class
                     } else {
-                        // Remove inline styles
-                        todoRow.querySelectorAll('td').forEach(function (cell) {
-                            cell.style.textDecoration = '';
-                            cell.style.color = '';
-                        });
+                        todoRow.classList.remove('completed'); // Remove the 'completed' class
                     }
                 } else {
                     console.error('Failed to update todo status.');
