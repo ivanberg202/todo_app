@@ -2,6 +2,8 @@ import { fetchTodos } from './api.js';
 import { openTodoForm } from './todo-form.js';
 import { addEventListeners } from './event-handlers.js';
 import { renderTodos } from './dom-utils.js';
+import { openUserDetailsForm } from './user_details.js';
+
 
 document.addEventListener("DOMContentLoaded", async function () {
     // Ensure user is authenticated
@@ -9,6 +11,30 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (!token) {
         window.location.href = "/auth/login-page";
         return;
+    }
+
+    // Add event listener for the user profile button
+    const userProfileButton = document.getElementById('userProfileButton');
+    if (userProfileButton) {
+        userProfileButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    openUserDetailsForm(userData, token); // Open modal with user data
+                } else {
+                    console.error('Failed to fetch user details');
+                }
+            } catch (error) {
+                console.error('Error fetching user details:', error);
+            }
+        });
     }
 
     // Bind event listener to the "Add a Todo" button
