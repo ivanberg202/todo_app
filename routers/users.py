@@ -30,12 +30,14 @@ class PhoneNumberUpdateRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
+    user_identifier: Optional[str] = None  # New field added
     username: Optional[str] = None
     email: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     role: Optional[str] = None
     phone_number: Optional[str] = None
+
 
 
 # Define Berlin timezone offset manually (adjust for DST as needed)
@@ -122,14 +124,12 @@ async def get_phone_number_history(
 
 @router.put("/update_details", status_code=200)
 async def update_user_details(
-        current_user: user_dependency,
-        user_update: UserUpdateRequest,
-        db: Session = Depends(get_db),
-        user_identifier: Optional[str] = Query(
-            None,  # Optional parameter for non-admins
-            description="Username or email of the user to update (required for admins)"
-        )
+    current_user: user_dependency,
+    user_update: UserUpdateRequest,
+    db: Session = Depends(get_db),
 ):
+    user_identifier = user_update.user_identifier  # Get from request body
+
     # Logic to determine which user to update
     if current_user.get('user_role') == 'admin':
         # Admins must provide a user_identifier
@@ -159,17 +159,15 @@ async def update_user_details(
     if user_update.username is not None:
         # Check for username uniqueness
         username_check = db.query(Users).filter(Users.username == user_update.username).first()
-        if username_check:
-            if username_check.id != user_model.id:
-                raise HTTPException(status_code=400, detail="Username is already in use by another account")
+        if username_check and username_check.id != user_model.id:
+            raise HTTPException(status_code=400, detail="Username is already in use by another account")
         user_model.username = user_update.username
 
     if user_update.email is not None:
         # Check for email uniqueness
         email_check = db.query(Users).filter(Users.email == user_update.email).first()
-        if email_check:
-            if email_check.id != user_model.id:
-                raise HTTPException(status_code=400, detail="Email is already in use by another account")
+        if email_check and email_check.id != user_model.id:
+            raise HTTPException(status_code=400, detail="Email is already in use by another account")
         user_model.email = user_update.email
 
     if user_update.first_name is not None:

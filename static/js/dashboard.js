@@ -2,8 +2,7 @@ import { fetchTodos } from './api.js';
 import { openTodoForm } from './todo-form.js';
 import { addEventListeners } from './event-handlers.js';
 import { renderTodos } from './dom-utils.js';
-import { openUserDetailsForm } from './user_details.js';
-
+import { openUserDetailsForm, getCurrentUserRole } from './user_details.js';
 
 document.addEventListener("DOMContentLoaded", async function () {
     // Ensure user is authenticated
@@ -18,16 +17,23 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (userProfileButton) {
         userProfileButton.addEventListener('click', async () => {
             try {
+                // Fetch the current user's role
+                console.log("Fetching role for user...");
+                const currentUserRole = await getCurrentUserRole(token);
+
+                // Fetch the user details
                 const response = await fetch('/auth/me', {
                     method: 'GET',
                     headers: {
                         Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
                 });
 
                 if (response.ok) {
                     const userData = await response.json();
-                    openUserDetailsForm(userData, token); // Open modal with user data
+                    console.log('Fetched user data:', userData);
+                    openUserDetailsForm(userData, token, currentUserRole); // Pass user data and role to the modal
                 } else {
                     console.error('Failed to fetch user details');
                 }
@@ -62,11 +68,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     } catch (error) {
         console.error("Error loading todos:", error);
     }
-});
 
-document.querySelector(".nav-link[href='/auth/logout']").addEventListener("click", (event) => {
-    event.preventDefault(); // Prevent the default link navigation
-    localStorage.removeItem("access_token"); // Clear the token from local storage
-    alert("You have been logged out.");
-    window.location.href = "/auth/login-page"; // Redirect to login page
+    // Logout functionality
+    document.querySelector(".nav-link[href='/auth/logout']").addEventListener("click", (event) => {
+        event.preventDefault(); // Prevent the default link navigation
+        localStorage.removeItem("access_token"); // Clear the token from local storage
+        alert("You have been logged out.");
+        window.location.href = "/auth/login-page"; // Redirect to login page
+    });
 });
